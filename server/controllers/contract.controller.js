@@ -85,6 +85,37 @@ export const sendContract = async (req, res) => {
   }
 };
 
+export const updateSeller = async (req, res) => {
+  try {
+    const { contractId, newSellerWallet, buyerWallet } = req.body;
+
+    if (!contractId || !newSellerWallet || !buyerWallet) {
+      return res.status(400).json({ error: 'contractId, newSellerWallet, and buyerWallet are required' });
+    }
+
+    const contract = await Contract.findOne({ contractId });
+    if (!contract) return res.status(404).json({ error: 'Contract not found' });
+
+    // Only the buyer (creator) can update the seller
+    if (contract.buyerWallet !== buyerWallet.toLowerCase()) {
+      return res.status(403).json({ error: 'Only the contract creator can update the seller address' });
+    }
+
+    // Only allow updates on pending contracts
+    if (contract.status !== 'Pending') {
+      return res.status(400).json({ error: 'Cannot update seller on a completed contract' });
+    }
+
+    contract.sellerWallet = newSellerWallet.toLowerCase();
+    await contract.save();
+
+    res.json({ message: 'Seller address updated successfully', contract });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 export const signContract = async (req, res) => {
   try {
     const { contractId, signature, message, sellerWallet, securityAnswers } = req.body;

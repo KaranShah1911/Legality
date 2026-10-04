@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAccount } from 'wagmi';
-import { FileText, Send, Download, CheckCircle, Clock, ExternalLink, Copy, Hash, Link2 } from 'lucide-react';
+import { FileText, Send, Download, CheckCircle, Clock, ExternalLink, Copy, Hash, Link2, RefreshCw } from 'lucide-react';
 
 const ContractDetails = () => {
   const { id } = useParams();
@@ -13,6 +13,9 @@ const ContractDetails = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState('');
+  const [isEditingSeller, setIsEditingSeller] = useState(false);
+  const [newSellerWallet, setNewSellerWallet] = useState('');
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => { fetchContractDetails(); }, [id]);
 
@@ -38,6 +41,26 @@ const ContractDetails = () => {
     } catch (err) { alert('Failed to send: ' + (err.response?.data?.error || err.message)); }
     finally { setSending(false); }
   };
+
+  const handleUpdateSeller = async () => {
+    if (!newSellerWallet.trim()) return alert('Please enter the new seller wallet address.');
+    setUpdating(true);
+    try {
+      const stored = JSON.parse(localStorage.getItem('user') || '{}');
+      const buyerWallet = address || stored?.walletAddress || '';
+      await axios.put('http://localhost:5000/api/contracts/update-seller', {
+        contractId: id,
+        newSellerWallet,
+        buyerWallet
+      });
+      await fetchContractDetails();
+      setNewSellerWallet('');
+      setIsEditingSeller(false);
+    } catch (err) { alert('Failed to update: ' + (err.response?.data?.error || err.message)); }
+    finally { setUpdating(false); }
+  };
+
+  const isBuyer = contract && address && contract.buyerWallet === address.toLowerCase();
 
   const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text);
@@ -98,11 +121,45 @@ const ContractDetails = () => {
                 background: contract.sellerWallet ? 'rgba(139,92,246,0.06)' : 'var(--bg-glass-sm)',
                 border: contract.sellerWallet ? '1px solid rgba(139,92,246,0.2)' : '1px dashed var(--border-glass-sm)'
               }}>
-                <p className="text-xs font-semibold text-violet-500 uppercase tracking-widest mb-2">Seller (Signee)</p>
-                {contract.sellerWallet
-                  ? <p className="font-mono text-sm break-all" style={{ color: 'var(--text-primary)' }}>{shortAddr(contract.sellerWallet)}</p>
-                  : <p className="text-sm italic" style={{ color: 'var(--text-dim)' }}>Not assigned yet</p>
-                }
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-violet-500 uppercase tracking-widest">Seller (Signee)</p>
+                  {/* Show edit button only for the buyer, when pending and seller is assigned */}
+                  {contract.sellerWallet && contract.status === 'Pending' && isBuyer && !isEditingSeller && (
+                    <button
+                      onClick={() => { setIsEditingSeller(true); setNewSellerWallet(contract.sellerWallet); }}
+                      className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg transition-all hover:scale-105"
+                      style={{ color: 'var(--text-dim)', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)' }}
+                      title="Change seller address"
+                    >
+                      <RefreshCw className="w-3 h-3" /> Change
+                    </button>
+                  )}
+                </div>
+                {isEditingSeller ? (
+                  <div className="space-y-2">
+                    <input
+                      className="form-input w-full text-xs"
+                      placeholder="0x... new seller wallet"
+                      value={newSellerWallet}
+                      onChange={e => setNewSellerWallet(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={handleUpdateSeller} disabled={updating} className="btn-primary text-xs px-3 py-1.5 flex-1">
+                        {updating
+                          ? <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          : <><RefreshCw className="w-3 h-3 mr-1" /> Update</>}
+                      </button>
+                      <button onClick={() => { setIsEditingSeller(false); setNewSellerWallet(''); }}
+                        className="btn-secondary text-xs px-3 py-1.5">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  contract.sellerWallet
+                    ? <p className="font-mono text-sm break-all" style={{ color: 'var(--text-primary)' }}>{shortAddr(contract.sellerWallet)}</p>
+                    : <p className="text-sm italic" style={{ color: 'var(--text-dim)' }}>Not assigned yet</p>
+                )}
               </div>
             </div>
           </div>
@@ -122,7 +179,7 @@ const ContractDetails = () => {
             </div>
           </div>
 
-          {/* Send contract section */}
+          {/* Send contract section — only when no seller is assigned yet */}
           {contract.status === 'Pending' && !contract.sellerWallet && (
             <div className="glass p-6">
               <h3 className="font-bold font-display mb-2 flex items-center gap-2" style={{ color: 'var(--text-heading)' }}>

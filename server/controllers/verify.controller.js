@@ -24,6 +24,13 @@ export const verifyContract = async (req, res) => {
       });
     }
 
+    const isFinalSigned = contract.finalHash === uploadedHash;
+
+    // documentStatus reflects the version of the document uploaded,
+    // not the current state of the contract in the DB.
+    // If someone uploads the draft PDF, show "Draft" even if the contract is now completed.
+    const documentStatus = isFinalSigned ? 'Completed' : 'Draft';
+
     res.json({
       verified: true,
       uploadedHash,
@@ -33,11 +40,12 @@ export const verifyContract = async (req, res) => {
         buyerWallet: contract.buyerWallet,
         sellerWallet: contract.sellerWallet,
         status: contract.status,
+        documentStatus,
         txHash: contract.txHash,
         createdAt: contract.createdAt
       },
-      isFinalSigned: contract.finalHash === uploadedHash,
-      message: contract.finalHash === uploadedHash
+      isFinalSigned,
+      message: isFinalSigned
         ? 'This is the final signed & blockchain-verified contract.'
         : 'This is the original unsigned draft of the contract.'
     });

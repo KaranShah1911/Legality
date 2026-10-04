@@ -141,9 +141,12 @@ const VerifyContract = () => {
                   <div className="info-row"><span className="info-label">Type</span><span className="info-value">{result.contract.templateType}</span></div>
                   <div className="info-row">
                     <span className="info-label">Status</span>
-                    <span>{result.contract.status === 'Completed'
+                    <span>{result.contract.documentStatus === 'Completed'
                       ? <span className="badge-completed text-xs"><CheckCircle className="w-3 h-3" /> Completed</span>
-                      : <span className="badge-pending text-xs">Pending</span>
+                      : <span className="text-xs font-semibold px-3 py-1 rounded-full inline-flex items-center gap-1"
+                          style={{ background: 'rgba(217,119,6,0.12)', color: '#d97706', border: '1px solid rgba(217,119,6,0.25)' }}>
+                          <FileText className="w-3 h-3" /> Draft
+                        </span>
                     }</span>
                   </div>
                   <div className="info-row">
