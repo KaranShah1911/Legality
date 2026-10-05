@@ -2,6 +2,35 @@ import puppeteer from 'puppeteer';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import { v2 as cloudinary } from 'cloudinary';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const uploadBufferToCloudinary = (buffer, fileName) => {
+  return new Promise((resolve, reject) => {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET
+    });
+
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'legality-contracts',
+        public_id: fileName,
+        resource_type: 'raw',
+        type: 'upload',
+        access_mode: 'public',
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result.secure_url);
+      }
+    );
+    uploadStream.end(buffer);
+  });
+};
 
 export const generatePDFAndHash = async (templateType, formData, isSigned = false, signatureData = null, buyerWallet = null) => {
   try {
@@ -49,18 +78,25 @@ export const generatePDFAndHash = async (templateType, formData, isSigned = fals
 
     const hash = crypto.createHash('sha256').update(pdfBuffer).digest('hex');
     
-    // Save locally for prototype
-    const dir = path.resolve('uploads');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir);
-    
-    const fileName = `${hash}.pdf`;
-    const filePath = path.join(dir, fileName);
-    fs.writeFileSync(filePath, pdfBuffer);
+    let pdfUrl;
+    if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+      pdfUrl = await uploadBufferToCloudinary(pdfBuffer, `${hash}.pdf`);
+    } else {
+      // Local fallback when Cloudinary credentials are not yet configured in .env
+      const dir = path.resolve('uploads');
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+      
+      const fileName = `${hash}.pdf`;
+      const filePath = path.join(dir, fileName);
+      fs.writeFileSync(filePath, pdfBuffer);
+      pdfUrl = `/uploads/${fileName}`;
+    }
 
-    return { hash, pdfUrl: `/uploads/${fileName}` };
+    return { hash, pdfUrl };
 
   } catch (error) {
     console.error('Error generating PDF:', error);
     throw error;
   }
 };
+
