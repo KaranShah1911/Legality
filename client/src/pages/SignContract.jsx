@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAccount, useSignMessage } from 'wagmi';
 import { ethers } from 'ethers';
-import { contractAddress, contractAbi } from '../utils/constants';
+import { contractAddress, contractAbi, BACKEND_URL } from '../utils/constants';
 import {
   FileText, Download, CheckCircle, ShieldCheck, Database, Loader,
   ExternalLink, AlertCircle, Lock, Fingerprint, X
@@ -37,7 +37,7 @@ const SignContract = () => {
     try {
       const stored = JSON.parse(localStorage.getItem('user') || '{}');
       const wa = address || stored?.walletAddress || '';
-      const res = await axios.get(`http://localhost:5000/api/contracts?walletAddress=${wa}`);
+      const res = await axios.get(`${BACKEND_URL}/api/contracts?walletAddress=${wa}`);
       const found = res.data.contracts.find(c => c.contractId === id);
       if (found) setContract(found);
     } catch (err) { console.error(err); }
@@ -61,7 +61,7 @@ const SignContract = () => {
       const signature = await signMessageAsync({ message });
       const formattedAnswers = securityData.map((sq, i) => ({ answer: answers[i] }));
       
-      const res = await axios.post('http://localhost:5000/api/contracts/sign', {
+      const res = await axios.post(`${BACKEND_URL}/api/contracts/sign`, {
         contractId: id, signature, message, sellerWallet: address, securityAnswers: formattedAnswers
       });
       setContract(res.data.contract);
@@ -86,7 +86,7 @@ const SignContract = () => {
       const sc = new ethers.Contract(contractAddress, contractAbi, signer);
       const tx = await sc.storeHash(bytes32Hash);
       await tx.wait();
-      await axios.post('http://localhost:5000/api/contracts/store-hash', { contractId: id, txHash: tx.hash });
+      await axios.post(`${BACKEND_URL}/api/contracts/store-hash`, { contractId: id, txHash: tx.hash });
       await fetchContractDetails();
     } catch (err) {
       alert('Transaction failed: ' + (err.reason || err.message));
@@ -150,7 +150,7 @@ const SignContract = () => {
           </div>
 
           {contract.pdfUrl && (
-            <a href={`http://localhost:5000${contract.pdfUrl}`} target="_blank" rel="noopener noreferrer"
+            <a href={contract.pdfUrl.startsWith('http') ? contract.pdfUrl : `${BACKEND_URL}${contract.pdfUrl}`} target="_blank" rel="noopener noreferrer"
               className="glass flex items-center gap-4 p-5 hover:border-indigo-500/30 transition-all group">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>

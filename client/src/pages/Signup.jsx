@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Shield, User, Mail, HelpCircle, ChevronRight, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { BACKEND_URL } from '../utils/constants';
 
 const SECURITY_QUESTIONS = [
   "Name of your first pet?",
@@ -40,7 +41,7 @@ const Signup = () => {
           { question: formData.q2, answer: formData.a2 },
         ]
       };
-      const res = await axios.post('http://localhost:5000/api/auth/signup', payload);
+      const res = await axios.post(`${BACKEND_URL}/api/auth/signup`, payload);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       sessionStorage.removeItem('pendingSignupTemp');
       navigate('/dashboard');

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAccount } from 'wagmi';
 import { FileText, Send, Download, CheckCircle, Clock, ExternalLink, Copy, Hash, Link2, RefreshCw } from 'lucide-react';
+import { BACKEND_URL } from '../utils/constants';
 
 const ContractDetails = () => {
   const { id } = useParams();
@@ -23,7 +24,7 @@ const ContractDetails = () => {
     try {
       const stored = JSON.parse(localStorage.getItem('user') || '{}');
       const wa = address || stored?.walletAddress || '';
-      const res = await axios.get(`http://localhost:5000/api/contracts?walletAddress=${wa}`);
+      const res = await axios.get(`${BACKEND_URL}/api/contracts?walletAddress=${wa}`);
       const found = res.data.contracts.find(c => c.contractId === id);
       if (found) setContract(found);
       else navigate('/dashboard');
@@ -35,7 +36,7 @@ const ContractDetails = () => {
     if (!sellerWallet.trim()) return alert('Please enter the seller wallet address.');
     setSending(true);
     try {
-      await axios.post('http://localhost:5000/api/contracts/send', { contractId: id, sellerWallet });
+      await axios.post(`${BACKEND_URL}/api/contracts/send`, { contractId: id, sellerWallet });
       await fetchContractDetails();
       setSellerWallet('');
     } catch (err) { alert('Failed to send: ' + (err.response?.data?.error || err.message)); }
@@ -48,7 +49,7 @@ const ContractDetails = () => {
     try {
       const stored = JSON.parse(localStorage.getItem('user') || '{}');
       const buyerWallet = address || stored?.walletAddress || '';
-      await axios.put('http://localhost:5000/api/contracts/update-seller', {
+      await axios.put(`${BACKEND_URL}/api/contracts/update-seller`, {
         contractId: id,
         newSellerWallet,
         buyerWallet
@@ -210,7 +211,8 @@ const ContractDetails = () => {
               {contract.status === 'Completed' ? 'Final signed document with embedded signatures.' : 'Draft document pending signatures.'}
             </p>
             {contract.pdfUrl ? (
-              <a href={`http://localhost:5000${contract.pdfUrl}`} target="_blank" rel="noopener noreferrer" className="btn-secondary w-full">
+              <a href={contract.pdfUrl.startsWith('http') ? contract.pdfUrl : `${BACKEND_URL}${contract.pdfUrl}`}
+                target="_blank" rel="noopener noreferrer" className="btn-secondary w-full">
                 <Download className="w-4 h-4 mr-2" /> Download PDF
               </a>
             ) : (

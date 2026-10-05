@@ -13,6 +13,7 @@ import ContractDetails from './pages/ContractDetails';
 import SignContract from './pages/SignContract';
 import VerifyContract from './pages/VerifyContract';
 import { Shield } from 'lucide-react';
+import { BACKEND_URL } from './utils/constants';
 
 const AuthGuard = ({ children }) => {
   const { address, isConnected, chainId } = useAccount();
@@ -51,7 +52,7 @@ const AuthGuard = ({ children }) => {
         const message = `Sign in to Legality with wallet: ${address}\nTimestamp: ${Date.now()}`;
         const signature = await signMessageAsync({ message });
 
-        const res = await axios.post('http://localhost:5000/api/auth/verify-wallet', {
+        const res = await axios.post(`${BACKEND_URL}/api/auth/verify-wallet`, {
           address,
           message,
           signature

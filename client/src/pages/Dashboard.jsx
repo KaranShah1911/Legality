@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAccount } from 'wagmi';
 import { FileText, PlusCircle, CheckCircle, Clock, ArrowRight, TrendingUp, Layers, Users } from 'lucide-react';
+import { BACKEND_URL } from '../utils/constants';
 
 const StatCard = ({ label, value, icon: Icon, color }) => (
   <div className="glass-sm p-5 flex items-center gap-4">
@@ -31,7 +32,7 @@ const Dashboard = () => {
 
   const fetchContracts = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/contracts?walletAddress=${address}`);
+      const res = await axios.get(`${BACKEND_URL}/api/contracts?walletAddress=${address}`);
       setContracts(res.data.contracts);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { UploadCloud, ShieldCheck, ShieldAlert, Loader, CheckCircle, XCircle, Hash, ExternalLink, FileText } from 'lucide-react';
+import { BACKEND_URL } from '../utils/constants';
 
 const VerifyContract = () => {
   const [file, setFile] = useState(null);
@@ -15,7 +16,7 @@ const VerifyContract = () => {
     try {
       const formData = new FormData();
       formData.append('pdf', file);
-      const res = await axios.post('http://localhost:5000/api/verify', formData, {
+      const res = await axios.post(`${BACKEND_URL}/api/verify`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setResult(res.data);

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 import { ethers } from 'ethers';
 import axios from 'axios';
-import { contractAddress, contractAbi } from '../utils/constants';
+import { contractAddress, contractAbi, BACKEND_URL } from '../utils/constants';
 import { FileText, ChevronDown, AlertCircle, Loader, CreditCard, ShieldCheck, X } from 'lucide-react';
 
 const CREATION_FEE_ETH = '0.1';
@@ -111,7 +111,7 @@ const CreateContract = () => {
     setIsGenerating(true);
     try {
       const formattedAnswers = securityData.map((sq, i) => ({ answer: answers[i] }));
-      const res = await axios.post('http://localhost:5000/api/contracts/create', {
+      const res = await axios.post(`${BACKEND_URL}/api/contracts/create`, {
         buyerWallet: address, 
         templateType: selectedTemplate, 
         formData,
